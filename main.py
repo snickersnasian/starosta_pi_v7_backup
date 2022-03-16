@@ -1,5 +1,31 @@
-##### импорт #####
+### берем токен ###
 import vk_api
+from general import _request, _navigation, _botdb
+from config import vk_token_main, vk_token_beta
+
+def select_token():
+    token = input("Куда подключаемся? \nНапиши main или beta \n>>")
+
+    if token == "main":
+        print("Основной бот запущен")
+        return(vk_token_main)
+
+    elif token == "beta":
+        print("Тестовый бот запущен")
+        return(vk_token_beta)
+    
+    elif token == None:
+        print("ошибка")
+        select_token()
+
+    else:
+        print("ошибка")
+        select_token()
+
+vk_token = select_token()
+
+##### импорт #####
+
 import time
 
 ##### достаем клавиатуру и longpoll #####
@@ -7,19 +33,19 @@ from vk_api.keyboard import VkKeyboard
 from vk_api.longpoll import VkLongPoll, VkEventType
 
 ##### достаем из доп. файлов нужную информацию #####
-from config import vk_token
-from weather import weather_def
-from request import joke_def, download_convert, array
-from navi import send_kampus, send_etaj, send_korpus
 from data import contacti_pochta, cool_sites, o_bote, faq, time_work, serch_kab
 from keyboard import main_kb, set_kb, game_kb, link_kb, schedule_kb, materials_kb, navi_kb, sok_kb, dev_kb, FC_schedule_kb, SC_schedule_kb, TC_schedule_kb, FO_schedule_kb
 
+
+
 #### главный процесс ####
 def main():
-
     ### содаем сеcсию ###
+    
     session = vk_api.VkApi(token=vk_token)
     session_api = session.get_api()
+    request = _request(vk_token)
+    navigation = _navigation(vk_token)
 
     ### функция для отправки сообщений ###
     def send_message(user_id, message, keyboard=None):
@@ -36,9 +62,9 @@ def main():
     ### функция для отправки расписания ###
     def send_schedule(x):
         send_message(user_id, "Уже ищу", None)
-        spisok = array()
+        spisok = request.array()
         send_message(user_id, f"Держи ссылку на расписание: \n{spisok[x]} \n\nВ течение минуты пришлю дополнительно картинки с расписанием", None)
-        download_convert(x, user_id)
+        request.download_convert(x, user_id)
         send_message(user_id, f"На всякий случай держи ссылку еще раз: \n{spisok[x]}", None)
 
     ### доп параметры ###
@@ -84,12 +110,12 @@ def main():
                 FC_schedule_kb(keyboard)
                 send_message(user_id, f"На этом пока все!", keyboard)
 
-            elif text == "цифровые технологии об-230766-21" or text == "об-230766-21"or text == "об23076621":
+            elif text == "цифровые технологии об-230766-21" or text == "об-230766-21" or text == "об23076621":
                 send_schedule(3)
                 FC_schedule_kb(keyboard)
                 send_message(user_id, f"На этом пока все!", keyboard)
 
-            elif text == "информационная безопасность об-7351-21" or text == "об-7351-21"or text == "об735121":
+            elif text == "информационная безопасность об-7351-21" or text == "об-7351-21" or text == "об735121":
                 send_schedule(2)
                 FC_schedule_kb(keyboard)
                 send_message(user_id, f"На этом пока все!", keyboard)
@@ -156,39 +182,40 @@ def main():
             elif text == "схема кампуса":
                 navi_kb(keyboard)
                 send_message(user_id, "Держи схему терретории РАНХиГС:", keyboard)
-                send_kampus(user_id)
-            
+                navigation.send_kampus(user_id)
+
             # схема отдельного корпуса #
             elif text == "схема отдельного корпуса":
                 sok_kb(keyboard)
                 send_message(user_id, "Выбери корпус:", keyboard)
-            
+
             # схема отдельного корпуса #
             elif '/' in text and len(text) < 7:
                 send_message(user_id, "Смотри, что нашел:")
-                send_etaj(text, user_id)
+                navigation.send_etaj(text, user_id)
 
             # схема отдельного корпуса #
             elif "корпус" in text:
                 send_message(user_id, "Смотри, что нашел:")
                 sok_kb(keyboard)
                 if "1" in text:
-                    send_korpus(1, user_id)
+                    navigation.send_korpus(1, user_id)
                 elif "2" in text:
-                    send_korpus(2, user_id)
+                    navigation.send_korpus(2, user_id)
                 elif "3" in text:
-                    send_korpus(3, user_id)
+                    navigation.send_korpus(3, user_id)
                 elif "5" in text:
-                    send_korpus(5, user_id)
+                    navigation.send_korpus(5, user_id)
                 elif "6" in text:
-                    send_korpus(6, user_id)
+                    navigation.send_korpus(6, user_id)
                 send_message(user_id, "На этом все.")
 
             ## учебные материалы ##
             elif text == "📚 учебные материалы":
                 materials_kb(keyboard)
-                send_message(user_id, "Ccылка на Яндекс.Диск ПИ: \n\nhttps://disk.yandex.ru/d/X1mkmFS9TpJJiw", keyboard)
-            
+                send_message(
+                    user_id, "Ccылка на Яндекс.Диск ПИ: \n\nhttps://disk.yandex.ru/d/X1mkmFS9TpJJiw", keyboard)
+
             ## полезные ссылки ##
             elif text == "🌐 полезные ссылки":
                 link_kb(keyboard)
@@ -197,7 +224,7 @@ def main():
             ## погода ##
             elif text == "☁ погода":
                 main_kb(keyboard)
-                send_message(user_id, weather_def(), keyboard)
+                send_message(user_id, request.weather_def(), keyboard)
 
             ## контакты ##
             elif text == "📞 контакты преподавателей":
@@ -219,7 +246,8 @@ def main():
                 k += 1
                 set_kb(keyboard)
                 send_message
-                send_message(user_id, "Напишите вашу идею или найденную ошибку. Я передам информацию разработчикам, что ты хочем им что-то сообщить", keyboard)
+                send_message(
+                    user_id, "Напишите вашу идею или найденную ошибку. Я передам информацию разработчикам, что ты хочем им что-то сообщить", keyboard)
 
                 if dev1_alerts == 1:
                     send_message(dev1_id, f"💡 {user_id}", keyboard)
@@ -231,7 +259,7 @@ def main():
             elif text == "🤖 о боте":
                 set_kb(keyboard)
                 send_message(user_id, o_bote, keyboard)
-            # вопросы / ответы # 
+            # вопросы / ответы #
             elif text == "❓ f.a.q.":
                 set_kb(keyboard)
                 send_message(user_id, faq, keyboard)
@@ -240,9 +268,8 @@ def main():
             elif text == "🤡 анекдот":
                 send_message(user_id, "Помню я один анекдот, сейчас расскажу...")
                 set_kb(keyboard)
-                send_message(user_id, joke_def(), keyboard)
+                send_message(user_id, request.joke_def(), keyboard)
 
-            
             ## dev ##
             elif dev1_id == user_id or dev2_id == user_id:
 
@@ -278,12 +305,15 @@ def main():
                     send_message(user_id, "alerts выкл")
 
 
-def main_restart():
-    try:
-        main()
-    except Exception as err:
-        print(err)
-        time.sleep(1)
-        main_restart()
+# def main_restart():
+#     try:
+#         main()
+#     except Exception as err:
+#         print(err)
+#         time.sleep(1)
+#         main_restart()
 
-main_restart()
+
+# main_restart()
+
+main()
