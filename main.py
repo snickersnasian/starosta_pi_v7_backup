@@ -305,15 +305,13 @@ def main():
                     send_message(user_id, "alerts выкл")
 
 
-# def main_restart():
-#     try:
-#         main()
-#     except Exception as err:
-#         print(err)
-#         time.sleep(1)
-#         main_restart()
+def main_restart():
+    try:
+        main()
+    except Exception as err:
+        print(err)
+        time.sleep(1)
+        main_restart()
 
 
-# main_restart()
-
-main()
+main_restart()
