@@ -1,6 +1,7 @@
 import os
 import os.path
 import sqlite3
+import pymysql
 import vk_api
 from pyowm import OWM
 import requests as req
@@ -78,8 +79,18 @@ class _request:
 
         self.session.method('messages.send', post)
 
+    def send_photo_patchka(self, photo, user_id):
+        a = self.session.method('photos.getMessagesUploadServer')
+        b = req.post(a['upload_url'], files={'photo': open(photo, 'rb')}).json()
+        c = self.session.method('photos.saveMessagesPhoto', {'photo': b['photo'], 'server': b['server'], 'hash': b['hash']})[0]
+        d = 'photo{}_{}'.format(c['owner_id'], c['id'])
+
+        post = {'user_id': user_id, 'attachment': d, "random_id": 0}
+
+        self.session.method('messages.send', post)
+
     #### конфертируем пдф в пнг ####
-    def download_convert(self, x, user_id):
+    def download_convert(self, x, style, user_id):
 
         spisok = self.array()
 
@@ -95,7 +106,6 @@ class _request:
             os.rmdir("foto")
 
         ### создаем папку вновь ###
-
         os.mkdir("foto")
 
         res = req.get(spisok[x])
@@ -103,27 +113,40 @@ class _request:
         with open(f'{x}.pdf', 'wb') as f:
             f.write(res.content)
 
-        ## convertapi.convert('png', {'File': f'{x}.pdf'}, from_format = 'pdf').save_files('foto')
-
-        def convert_to_pdf(self, pdf):
+        def convert_to_pdf(self, style, pdf):
             pages = convert_from_path(pdf, 100)
 
             for i, page in enumerate(pages):
                 page.save(f'foto/{i}.png', 'PNG')
+                count = i
 
-                self.send_photo(f"foto/{i}.png", user_id)
+                if style == "классический":
+                    self.send_photo(f"foto/{i}.png", user_id)
 
-        convert_to_pdf(self, f'{x}.pdf')
+            if style == "упрощенный":
+                count += 1
+                fotos = []
+                fotos_exit = ""
 
-        ### отсылаем сообщение ###
-        for y in range(0, 5):
+                for i in range(0, count):
 
-            check_file = os.path.exists(f"foto/{x}-{y}.png")
+                    a = self.session.method('photos.getMessagesUploadServer')
+                    b = req.post(a['upload_url'], files={'photo': open(f"foto/{i}.png", 'rb')}).json()
+                    c = self.session.method('photos.saveMessagesPhoto', {'photo': b['photo'], 'server': b['server'], 'hash': b['hash']})[0]
+                    d = 'photo{}_{}'.format(c['owner_id'], c['id'])
 
-            if check_file == True:
-                photo = f"foto/{x}-{y}.png"
+                    fotos.append(d)
 
-                self.send_photo(photo, user_id)
+                    if i == 0:
+                        fotos_exit = fotos[i]
+                    else:
+                        fotos_exit = fotos_exit + "," + fotos[i]
+
+                post = {'user_id': user_id,'attachment': f'{fotos_exit}', "random_id": 0}
+
+                self.session.method('messages.send', post)
+
+        convert_to_pdf(self, style,f'{x}.pdf')
 
         spisok = []
 
@@ -188,17 +211,27 @@ class _navigation:
 
 
 class _botdb:
-    def __init__(self, db_file):
-        self.conn = sqlite3.connect(db_file)
+    def __init__(self, host, username, secret, db_name):
+        self.conn = pymysql.connect(
+            host=host,
+            user=username,
+            password=secret,
+            database=db_name,
+            cursorclass=pymysql.cursors.DictCursor,
+            charset="utf8"
+        )
+
+        # self.conn = sqlite3.connect(db_name)
 
         self.cur = self.conn.cursor()
 
         self.cur.execute("""CREATE TABLE IF NOT EXISTS users(
-            user_id INT,
-            role TEXT,
-            ui_position INT,
-            type_of_schedule INT,
-            number_of_message INT);
+                user_id INT,
+                role TEXT,
+                ui_position TEXT,
+                type_of_schedule TEXT,
+                number_of_message INT
+            ) CHARACTER SET utf8mb4;
         """)
 
         self.conn.commit()
@@ -212,30 +245,69 @@ class _botdb:
         return(bool(result))
 
     def create_user(self, user_id):
-        self.cur.execute(
-            f"""INSERT INTO users (user_id, role, ui_position, type_of_schedule, number_of_message) VALUES ({user_id}, "user", 1, 1, {0})""")
+        self.cur.execute(f"""INSERT INTO users (user_id, role, ui_position, type_of_schedule, number_of_message) VALUES ({user_id}, "user", "главное меню", "классический", {0})""")
 
         self.conn.commit()
 
     def set_position(self, user_id, position):
-        self.cur.execute(
-            f"""UPDATE users SET ui_position = {position} WHERE user_id = {user_id}""")
+        self.cur.execute(f"""UPDATE users SET ui_position = "{position}" WHERE user_id = {user_id}""")
 
         self.conn.commit()
 
+    def column_info(self, x,  user_id):
+        self.cur.execute(f"""SELECT * FROM users WHERE user_id = {user_id}""")
+
+        position=''
+
+        if (x == 2):
+            position = 'ui_position'
+        elif (x == 3):
+            position = 'type_of_schedule'
+        elif (x == 4):
+            position = 'number_of_message'
+        
+        info = self.cur.fetchone()[position]
+
+        if not info:
+            return ''
+        
+        return(info)
+
     def set_type_of_schedule(self, user_id, type):
-        self.cur.execute(
-            f"""UPDATE users SET type_of_schedule = {type} WHERE user_id = {user_id}""")
+        self.cur.execute(f"""UPDATE users SET type_of_schedule = "{type}" WHERE user_id = {user_id}""")
 
         self.conn.commit()
 
     def message_count(self, user_id):
-        self.cur.execute(
-            f"""SELECT number_of_message FROM users WHERE user_id = {user_id} """)
+        self.cur.execute(f"""SELECT number_of_message FROM users WHERE user_id = {user_id} """)
 
-        new_count = self.cur.fetchall()[0][0] + 1
+        new_count = self.cur.fetchall()[0]['number_of_message'] + 1
 
-        self.cur.execute(
-            f"""UPDATE users SET number_of_message = {new_count} WHERE user_id = {user_id}""")
+        self.cur.execute(f"""UPDATE users SET number_of_message = {new_count} WHERE user_id = {user_id}""")
 
         self.conn.commit()
+
+    def teacher_exists(self, name):
+        self.cur.execute(f"""SELECT * FROM teacher WHERE sname = "{name}" """)
+
+        result = self.cur.fetchall()
+
+        return(bool(result))
+
+    def teacher_info(self, x, name):
+        self.cur.execute(f"""SELECT * FROM teacher WHERE sname = "{name}" """)
+         
+        column=''
+
+        if (x == 0):
+            column = 'fname'
+        elif (x == 1):
+            column = 'sname'
+        elif (x == 2):
+            column = 'tname'
+        elif (x == 3):
+            column = 'mail'
+
+        info = self.cur.fetchone()[column]
+
+        return(info)

@@ -1,7 +1,15 @@
-### берем токен ###
 import vk_api
+import time
+
+from config import vk_token_main, vk_token_beta, mySQL
+
+from vk_api.keyboard import VkKeyboard
+from vk_api.longpoll import VkLongPoll, VkEventType
+
+from data import _data as data
+from keyboard import _keyboard as kb
 from general import _request, _navigation, _botdb
-from config import vk_token_main, vk_token_beta
+
 
 def select_token():
     token = input("Куда подключаемся? \nНапиши main или beta \n>>")
@@ -13,41 +21,26 @@ def select_token():
     elif token == "beta":
         print("Тестовый бот запущен")
         return(vk_token_beta)
-    
-    elif token == None:
-        print("ошибка")
-        select_token()
 
     else:
         print("ошибка")
-        select_token()
+        exit()
 
-vk_token = select_token()
-
-##### импорт #####
-
-import time
-
-##### достаем клавиатуру и longpoll #####
-from vk_api.keyboard import VkKeyboard
-from vk_api.longpoll import VkLongPoll, VkEventType
-
-##### достаем из доп. файлов нужную информацию #####
-from data import contacti_pochta, cool_sites, o_bote, faq, time_work, serch_kab
-from keyboard import main_kb, set_kb, game_kb, link_kb, schedule_kb, materials_kb, navi_kb, sok_kb, dev_kb, FC_schedule_kb, SC_schedule_kb, TC_schedule_kb, FO_schedule_kb
-
-
-
-#### главный процесс ####
 def main():
-    ### содаем сеcсию ###
-    
     session = vk_api.VkApi(token=vk_token)
     session_api = session.get_api()
+
     request = _request(vk_token)
     navigation = _navigation(vk_token)
 
-    ### функция для отправки сообщений ###
+
+    base = _botdb(
+        host=mySQL["server"],
+        username=mySQL["username"],
+        secret=mySQL["password"], 
+        db_name=mySQL["db_name"]
+    )
+
     def send_message(user_id, message, keyboard=None):
         post = {
             "user_id": user_id,
@@ -59,15 +52,17 @@ def main():
 
         session.method("messages.send", post)
 
-    ### функция для отправки расписания ###
-    def send_schedule(x):
+    def send_schedule(x, style):
         send_message(user_id, "Уже ищу", None)
         spisok = request.array()
-        send_message(user_id, f"Держи ссылку на расписание: \n{spisok[x]} \n\nВ течение минуты пришлю дополнительно картинки с расписанием", None)
-        request.download_convert(x, user_id)
-        send_message(user_id, f"На всякий случай держи ссылку еще раз: \n{spisok[x]}", None)
+        if (base.column_info(3, user_id) == "без картинок"):
+            send_message(user_id, f"Держи ссылку на расписание: \n{spisok[x]}.")
+        else:
+            send_message(user_id, f"Держи ссылку на расписание: \n{spisok[x]} \n\nВ течение минуты пришлю дополнительно картинки с расписанием")
+            request.download_convert(x, style, user_id)
+            send_message(user_id, f"На этом пока все!")
 
-    ### доп параметры ###
+    ### ---------------- доп параметры ------------------- ###
     album_id = 281423879
     group_id = 207687870
 
@@ -76,128 +71,169 @@ def main():
 
     k = 0
 
+    err_mes_user = 1
+
     dev1_alerts = 0
     dev2_alerts = 0
 
+    dev1_err_mes_user = 0
+    dev2_err_mes_user = 0
+
     privet = "0E2C2F0E2F190E2E210E2E1B0E2E1E0E2F1B"
 
-    #Создаем ивент на сообщение
+    main_ui_position = "расписание", "полезные ссылки", "навигация 1", "игры", "настройки", "контакты преподавателей"
+    course_ui_position = "1 курс", "2 курс", "3 курс", "4 курс"
+    ### ------------------------------------------------- ###
+
     for event in VkLongPoll(session).listen():
         if event.type == VkEventType.MESSAGE_NEW and event.to_me:
             text = event.text.lower()
+            text_teacher = event.text
             user_id = event.user_id
 
             keyboard = VkKeyboard(one_time=False)
 
-            ### главное меню ###
-            if text == "начать" or text == "start" or text == "назад" or text == "назад в главное меню" or text == "главное меню":
-                main_kb(keyboard)
+            if not base.user_id_exists(user_id):
+                base.create_user(user_id)
+                print(f"Появился новый пользователь! ID: {user_id}")
+
+                kb.start(keyboard)
+                send_message(user_id, data.start_message, keyboard)
+
+            ### главное меню {"главное меню"}###
+            elif (text == "начать") or (text == "start") or (text == "главное меню") or (base.column_info(2, user_id) in main_ui_position and text == "назад"):
+                kb.main_menu(keyboard)
                 send_message(user_id, "Главное меню", keyboard)
 
-            ## расписание ##
-            elif text == "📆 расписание" or text == "расписание" or text == "назад к выбору курса":
-                schedule_kb(keyboard)
+                base.set_position(user_id, "главное меню")
+
+
+            ## расписание {"расписание"}##
+            elif (text == "расписание") or (base.column_info(2, user_id) == "главное меню" and text == "📆 расписание") or (base.column_info(2, user_id) in course_ui_position and text == "назад"):
+                kb.schedule(keyboard)
                 send_message(user_id, "Выбери курс", keyboard)
 
-            # 1 курс #
-            elif text == "1 курс":
+                base.set_position(user_id, "расписание")
+
+            # 1 курс {"1 курс"}#
+            elif (base.column_info(2, user_id) == "расписание" and text == "1 курс"):
                 send_message(user_id, "Подожди секундочку...")
-                FC_schedule_kb(keyboard)
+                kb.FC_schedule(keyboard)
                 send_message(user_id, "Смотри, что нашел: \n\n", keyboard)
+
+                base.set_position(user_id, "1 курс")
 
             elif text == "экономика об-7350-21" or text == "об-7350-21" or text == "об735021":
-                send_schedule(1)
-                FC_schedule_kb(keyboard)
-                send_message(user_id, f"На этом пока все!", keyboard)
+                send_schedule(1, (base.column_info(3, user_id)))
 
             elif text == "цифровые технологии об-230766-21" or text == "об-230766-21" or text == "об23076621":
-                send_schedule(3)
-                FC_schedule_kb(keyboard)
-                send_message(user_id, f"На этом пока все!", keyboard)
-
+                send_schedule(3, (base.column_info(3, user_id)))
             elif text == "информационная безопасность об-7351-21" or text == "об-7351-21" or text == "об735121":
-                send_schedule(2)
-                FC_schedule_kb(keyboard)
-                send_message(user_id, f"На этом пока все!", keyboard)
+                send_schedule(2, (base.column_info(3, user_id)))
 
-            # 2 курс #
-            elif text == "2 курс":
+            # 2 курс {"2 курс"}#
+            elif (base.column_info(2, user_id) == "расписание" and text == "2 курс"):
                 send_message(user_id, "Подожди секундочку...")
-                SC_schedule_kb(keyboard)
+                kb.SC_schedule(keyboard)
                 send_message(user_id, "Смотри, что нашел: \n\n", keyboard)
+
+                base.set_position(user_id, "2 курс")
 
             elif text == "экономика об-7350-20" or text == "об-7350-20" or text == "об735020":
-                send_schedule(7)
-                SC_schedule_kb(keyboard)
-                send_message(user_id, f"На этом пока все!", keyboard)
+                send_schedule(7, (base.column_info(3, user_id)))
 
             elif text == "информационная безопасность об-7351-20" or text == "об-7351-20" or text == "об735120":
-                send_schedule(8)
-                SC_schedule_kb(keyboard)
-                send_message(user_id, f"На этом пока все!", keyboard)
+                send_schedule(8, (base.column_info(3, user_id)))
 
-            # 3 курс #
-            elif text == "3 курс":
+            # 3 курс {"3 курс"}#
+            elif (base.column_info(2, user_id) == "расписание" and text == "3 курс"):
                 send_message(user_id, "Подожди секундочку...")
-                TC_schedule_kb(keyboard)
+                kb.TC_schedule(keyboard)
                 send_message(user_id, "Смотри, что нашел: \n\n", keyboard)
+
+                base.set_position(user_id, "3 курс")
 
             elif text == "экономика об-7350-19" or text == "об-7350-19" or text == "об735019":
-                send_schedule(11)
-                TC_schedule_kb(keyboard)
-                send_message(user_id, f"На этом пока все!", keyboard)
+                send_schedule(11, (base.column_info(3, user_id)))
 
             elif text == "информационная безопасность об-7351-19" or text == "об-7351-19" or text == "об735119":
-                send_schedule(12)
-                TC_schedule_kb(keyboard)
-                send_message(user_id, f"На этом пока все!", keyboard)
+                send_schedule(12, (base.column_info(3, user_id)))
 
-            # 4 курс #
-            elif text == "4 курс":
+            # 4 курс {"4 курс"}#
+            elif (base.column_info(2, user_id) == "расписание" and text == "4 курс"):
                 send_message(user_id, "Подожди секундочку...")
-                FO_schedule_kb(keyboard)
+                kb.FO_schedule(keyboard)
                 send_message(user_id, "Смотри, что нашел: \n\n", keyboard)
 
+                base.set_position(user_id, "4 курс")
+
             elif text == "экономика об-7350-18" or text == "об-7350-18" or text == "об735018":
-                send_schedule(15)
-                FO_schedule_kb(keyboard)
-                send_message(user_id, f"На этом пока все!", keyboard)
+                send_schedule(15, (base.column_info(3, user_id)))
 
             elif text == "информационная безопасность об-7351-18" or text == "об-7351-18" or text == "об735118":
-                send_schedule(16)
-                FO_schedule_kb(keyboard)
-                send_message(user_id, f"На этом пока все!", keyboard)
+                send_schedule(16, (base.column_info(3, user_id)))
 
-            ## навигация по кампусу ##
-            elif text == "🧭 навигация по ранхигс" or text == "назад к выбору навигации":
-                navi_kb(keyboard)
+            ## контакты ##
+            elif (base.column_info(2, user_id) == "главное меню" and text == "📞 контакты преподавателей"):
+                kb.contacts(keyboard)
+                send_message(user_id, "контакты преподавателей", keyboard)
+
+                base.set_position(user_id, "контакты преподавателей")
+
+            elif (base.column_info(2, user_id) == "контакты преподавателей" and text == "посмотреть весь список"):
+                send_message(user_id, data.contacti_pochta)
+
+            elif (base.column_info(2, user_id) == "контакты преподавателей" and text == "поиск преподавателя"):
+                send_message(user_id, data.serch_teach)
+
+            elif (base.column_info(2, user_id) == "контакты преподавателей"):
+                if base.teacher_exists(text.title()):
+                    send_message(user_id, f"{base.teacher_info(1, text.title())} {base.teacher_info(0, text.title())} {base.teacher_info(2, text.title())} - {base.teacher_info(3, text.title())}")
+                else:
+                    send_message(user_id, "Я такого преподавателя пока не знаю.")
+
+            ## время работы ##
+            elif (base.column_info(2, user_id) == "главное меню" and text == "🕖 время работы"):
+                send_message(user_id, data.time_work)
+
+            ## полезные ссылки ##
+            elif text == "🌐 полезные ссылки":
+                kb.link(keyboard)
+                send_message(user_id, data.usseful_sites, keyboard)
+
+                base.set_position(user_id, "полезные ссылки")
+
+            ## навигация по ранхигс {"навигация 1"}##
+            elif (base.column_info(2, user_id) == "главное меню" and text == "🧭 навигация по ранхигс") or (base.column_info(2, user_id) == "навигация 2" and text == "назад"):
+                kb.navigation(keyboard)
                 send_message(user_id, "Что тебя интересует?", keyboard)
 
+                base.set_position(user_id, "навигация 1")
+
             # поиск кабинета #
-            elif text == "ищу кабинет":
-                navi_kb(keyboard)
-                send_message(user_id, serch_kab, keyboard)
+            elif (base.column_info(2, user_id) == "навигация 1" and text == "ищу кабинет"):
+                send_message(user_id, data.serch_kab)
 
             # cхема кампуса #
-            elif text == "схема кампуса":
-                navi_kb(keyboard)
-                send_message(user_id, "Держи схему терретории РАНХиГС:", keyboard)
+            elif (base.column_info(2, user_id) == "навигация 1" and text == "схема кампуса"):
+                send_message(user_id, "Держи схему терретории РАНХиГС:")
                 navigation.send_kampus(user_id)
 
             # схема отдельного корпуса #
-            elif text == "схема отдельного корпуса":
-                sok_kb(keyboard)
+            elif (base.column_info(2, user_id) == "навигация 1" and text == "схема отдельного корпуса"):
+                kb.scheme_housing(keyboard)
                 send_message(user_id, "Выбери корпус:", keyboard)
 
+                base.set_position(user_id, "навигация 2")
+
             # схема отдельного корпуса #
-            elif '/' in text and len(text) < 7:
+            elif ('/' in text and len(text) < 7):
                 send_message(user_id, "Смотри, что нашел:")
                 navigation.send_etaj(text, user_id)
 
             # схема отдельного корпуса #
-            elif "корпус" in text:
+            elif (base.column_info(2, user_id) == "навигация 2" and "корпус" in text):
                 send_message(user_id, "Смотри, что нашел:")
-                sok_kb(keyboard)
                 if "1" in text:
                     navigation.send_korpus(1, user_id)
                 elif "2" in text:
@@ -210,100 +246,103 @@ def main():
                     navigation.send_korpus(6, user_id)
                 send_message(user_id, "На этом все.")
 
-            ## учебные материалы ##
-            elif text == "📚 учебные материалы":
-                materials_kb(keyboard)
-                send_message(
-                    user_id, "Ccылка на Яндекс.Диск ПИ: \n\nhttps://disk.yandex.ru/d/X1mkmFS9TpJJiw", keyboard)
-
-            ## полезные ссылки ##
-            elif text == "🌐 полезные ссылки":
-                link_kb(keyboard)
-                send_message(user_id, cool_sites, keyboard)
-
             ## погода ##
-            elif text == "☁ погода":
-                main_kb(keyboard)
-                send_message(user_id, request.weather_def(), keyboard)
-
-            ## контакты ##
-            elif text == "📞 контакты преподавателей":
-                main_kb(keyboard)
-                send_message(user_id, contacti_pochta, keyboard)
+            elif (base.column_info(2, user_id) == "главное меню" and text == "☁ погода"):
+                send_message(user_id, request.weather_def())
 
             ## игры ##
-            elif text == "🔮 игры":
-                game_kb(keyboard)
+            elif (base.column_info(2, user_id) == "главное меню" and text == "🔮 игры"):
+                kb.games(keyboard)
                 send_message(user_id, "Смотри какие игры я знаю:", keyboard)
 
+                base.set_position(user_id, "игры")
+
             ## настройки ##
-            elif text == "⚙ настройки":
-                set_kb(keyboard)
+            elif (base.column_info(2, user_id) == "главное меню" and text == "⚙ настройки") or (base.column_info(2, user_id) == "настройки стиль" and text == "назад"):
+                kb.settings(keyboard, (base.column_info(3, user_id)))
                 send_message(user_id, "Меню настроек", keyboard)
 
+                base.set_position(user_id, "настройки")
+
+            elif (base.column_info(2, user_id) == "настройки" and "стиль" in text):
+                kb.style_settings(keyboard, (base.column_info(3, user_id)))
+                send_message(user_id, "Выбери стиль расписания:", keyboard)
+
+                base.set_position(user_id, "настройки стиль")
+
+            elif (base.column_info(2, user_id) == "настройки стиль"):
+                style_count = 0
+                if ("классический" in text):
+                    base.set_type_of_schedule(user_id, "классический")
+                    kb.style_settings(keyboard, (base.column_info(3, user_id)))
+
+                elif("упрощенный" in text):
+                    base.set_type_of_schedule(user_id, "упрощенный")
+                    kb.style_settings(keyboard, (base.column_info(3, user_id)))
+
+                elif("без картинок" in text):
+                    base.set_type_of_schedule(user_id, "без картинок")
+                    kb.style_settings(keyboard, (base.column_info(3, user_id)))
+                    style_count = 1
+
+                if style_count == 0:
+                    send_message(user_id, f"Выбран {base.column_info(3, user_id)} стиль", keyboard)
+                elif style_count == 1:
+                    send_message(user_id, f"Выбран стиль {base.column_info(3, user_id)}", keyboard)
+
             # идея / сообщить об ошибке #
-            elif text == "💡 идея / 🤔 сообщить об ошибке":
+            elif (base.column_info(2, user_id) == "настройки" and text == "💡 идея / 🤔 сообщить об ошибке"):
                 k += 1
-                set_kb(keyboard)
-                send_message
-                send_message(
-                    user_id, "Напишите вашу идею или найденную ошибку. Я передам информацию разработчикам, что ты хочем им что-то сообщить", keyboard)
+                send_message(user_id, "Напишите вашу идею или найденную ошибку. Я передам информацию разработчикам, что ты хочем им что-то сообщить")
 
                 if dev1_alerts == 1:
-                    send_message(dev1_id, f"💡 {user_id}", keyboard)
+                    send_message(dev1_id, f"💡 {user_id}")
 
                 if dev2_alerts == 1:
-                    send_message(dev2_id, f"💡 {user_id}", keyboard)
+                    send_message(dev2_id, f"💡 {user_id}")
 
             # о боте #
-            elif text == "🤖 о боте":
-                set_kb(keyboard)
-                send_message(user_id, o_bote, keyboard)
+            elif (base.column_info(2, user_id) == "настройки" and text == "🤖 о боте"):
+                send_message(user_id, data.o_bote)
+
             # вопросы / ответы #
-            elif text == "❓ f.a.q.":
-                set_kb(keyboard)
-                send_message(user_id, faq, keyboard)
+            elif (base.column_info(2, user_id) == "настройки" and text == "❓ f.a.q."):
+                send_message(user_id, data.faq)
 
             # анекдот #
-            elif text == "🤡 анекдот":
+            elif (text == "анекдот"):
                 send_message(user_id, "Помню я один анекдот, сейчас расскажу...")
-                set_kb(keyboard)
-                send_message(user_id, request.joke_def(), keyboard)
+                send_message(user_id, request.joke_def())
 
             ## dev ##
-            elif dev1_id == user_id or dev2_id == user_id:
+            elif (base.column_info(2, user_id) == "настройки" and base.column_info(1, user_id) == "owner" and text == "dev"):
+                kb.developer(keyboard)
+                send_message(user_id, privet, keyboard)
 
-                if text == "dev":
-                    dev_kb(keyboard)
-                    send_message(user_id, "Здравствуй отец", keyboard)
+                base.set_position(user_id, "aдмин панель")
 
-                elif text == "error":
-                    dev_kb(keyboard)
-                    send_message(user_id, f"Количество error: {k}", keyboard)
+            elif (base.column_info(2, user_id) == "aдмин панель" and base.column_info(1, user_id) == "owner"):
 
-                elif text == "error = 0":
-                    k = 0
-                    dev_kb(keyboard)
-                    send_message(user_id, f"Количество error: {k}", keyboard)
+                if "err_mes_user" in text:
+                    if "вкл" in text:
+                        err_mes_user = 1
 
-                elif text == "вкл alerts":
-                    if dev1_id == user_id:
-                        dev1_alerts = 1
+                        send_message(user_id, "err_mes_user вкл")
 
-                    elif dev2_id == user_id:
-                        dev2_alerts = 1
+                    elif "выкл" in text:
+                        err_mes_user = 0
 
-                    send_message(user_id, "alerts вкл")
+                        send_message(user_id, "err_mes_user выкл")
 
-                elif text == "выкл alerts":
-                    if dev1_id == user_id:
-                        dev1_alerts = 0
+            elif (err_mes_user == 1):
+                send_message(user_id, "Не совсем понимаю, что ты хочешь сказать\nВыбери пункт в меню.\n\n Если нничего не получается, то просто напиши команду 'начать' или 'start' ")
 
-                    elif dev2_id == user_id:
-                        dev2_alerts = 0
+            base.message_count(user_id)
+            time.sleep(0.5)
 
-                    send_message(user_id, "alerts выкл")
 
+
+vk_token = select_token()
 
 def main_restart():
     try:
@@ -315,3 +354,5 @@ def main_restart():
 
 
 main_restart()
+
+# main()
