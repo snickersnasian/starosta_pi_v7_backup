@@ -281,7 +281,7 @@ def main():
                 kb.profile(keyboard, base.user_info(user_id))
 
                 if text_standart != "1 курс Магистратура" or text_standart != "2 курс Магистратура":
-                    send_message(user_id, f"Выбран {text_standart} курс", keyboard)
+                    send_message(user_id, f"Выбран {text_standart}", keyboard)
                 else:
                     send_message(user_id, f"Выбран {text_standart}", keyboard)
 
@@ -389,12 +389,12 @@ def main():
             ## =========== ПАСХАЛКИ =========== ##
 
 
-            elif (err_mes_user == 1):
-                
+            else:
                 schedule = base.send_schedule(text)
 
                 if not schedule:
-                    send_message(user_id, "Не совсем понимаю, что ты хочешь сказать\nВыбери пункт в меню.\n\n Если нничего не получается, то просто напиши команду 'начать', 'start' или 'главное меню' ")
+                    if (err_mes_user == 1):
+                        send_message(user_id, "Не совсем понимаю, что ты хочешь сказать\nВыбери пункт в меню.\n\n Если нничего не получается, то просто напиши команду 'начать', 'start' или 'главное меню' ")
                 else:
                     send_schedule(schedule, user_id, base.column_info(5, user_id))
                         

@@ -19,7 +19,7 @@ class _keyboard:
         keyboard.add_button(label="📞 Контакты преподавателей", color=green)
         keyboard.add_line()
 
-        if profile[2] == "4" or profile[2] == "5" or profile[2] == "2/Магистратура":
+        if profile[2] == "4 курс" or profile[2] == "5 курс" or profile[2] == "2 курс Магистратура":
             keyboard.add_button(label="👨‍🎓 Для выпускников", color=green)
             keyboard.add_line()
 
