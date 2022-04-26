@@ -58,8 +58,9 @@ def main():
             if h in i:
                 link = i
 
-        if (base.column_info(3, user_id) == "без картинок"):
+        if (base.column_info(5, user_id) == "без картинок"):
             send_message(user_id, f"Держи ссылку на расписание: \n{link}.")
+            send_message(user_id, f"На этом пока все!")
         else:
             send_message(user_id, f"Держи ссылку на расписание: \n{link} \n\nВ течение минуты пришлю дополнительно картинки с расписанием")
             request.download_convert(link, style, user_id)
