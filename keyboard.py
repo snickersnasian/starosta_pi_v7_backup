@@ -9,22 +9,26 @@ white = VkKeyboardColor.SECONDARY
 
 class _keyboard:
     def start(keyboard):
-        keyboard.add_button(label="Начать", color=green)
+        keyboard.add_button(label="Приступить к работе", color=green)
 
     #### клавиатура - главное меню ####
-    def main_menu(keyboard):
+    def main_menu(keyboard, profile):
         keyboard.add_button(label="📆 Расписание", color=green)
         keyboard.add_line()
 
         keyboard.add_button(label="📞 Контакты преподавателей", color=green)
         keyboard.add_line()
 
-        keyboard.add_button(label="🕖 Время работы", color=blue)
+        if profile[2] == "4" or profile[2] == "5" or profile[2] == "2/Магистратура":
+            keyboard.add_button(label="👨‍🎓 Для выпускников", color=green)
+            keyboard.add_line()
+
+        keyboard.add_button(label="🧭 Навигация по РАНХиГС", color=blue)
 
         keyboard.add_button(label="🌐 Полезные ссылки", color=blue)
         keyboard.add_line()
 
-        keyboard.add_button(label="🧭 Навигация по РАНХиГС", color=blue)
+        keyboard.add_button(label="🕖 Часы работы", color=blue)
 
         keyboard.add_button(label="☁ Погода", color=blue)
         keyboard.add_line()
@@ -33,99 +37,53 @@ class _keyboard:
 
         keyboard.add_button(label="⚙ Настройки", color=white)
 
-    def contacts(keyboard):
+    #### генерируем клаву ####
+    def gen_schedule(keyboard, name_schedule):
         keyboard.add_button(label="Назад", color=green)
         keyboard.add_line()
 
-        keyboard.add_button(label="Поиск преподавателя", color=blue)
-        keyboard.add_line()
+        for i in range(len(name_schedule)):
+            keyboard.add_button(label=f"{name_schedule[i-1]}", color=blue)
 
-        keyboard.add_button(label="Посмотреть весь список", color=blue)
+            if i != (len(name_schedule)-1):
+                keyboard.add_line()
 
     #### клавиатура - ссылки ####
     def link(keyboard):
         keyboard.add_button(label="Назад", color=green)
         keyboard.add_line()
 
-        keyboard.add_openlink_button(label="📚 Яндекс.Диск 📚", link="https://disk.yandex.ru/d/X1mkmFS9TpJJiw")
+        keyboard.add_openlink_button(
+            label="📚 Яндекс.Диск 📚", link="https://disk.yandex.ru/d/X1mkmFS9TpJJiw")
         keyboard.add_line()
 
-        keyboard.add_openlink_button(label="🌐 Официальный сайт РАНХиГС", link="http://ranepa.ru")
+        keyboard.add_openlink_button(
+            label="📌 Сайт ЭМИТа", link="https://emit.ranepa.ru/faculty-2/ai/")
         keyboard.add_line()
 
-        keyboard.add_openlink_button(label="💼 Личный кабинет", link="http://my.ranepa.ru")
+        keyboard.add_openlink_button(
+            label="💼 Личный кабинет", link="http://my.ranepa.ru")
 
-        keyboard.add_openlink_button(label="📖 Кабинет в СДО", link="http://lms.ranepa.ru")
+        keyboard.add_openlink_button(
+            label="📖 Кабинет в СДО", link="http://lms.ranepa.ru")
         keyboard.add_line()
 
-        keyboard.add_openlink_button(label="📌 Сайт с расписанием", link="http://lk.ranepa.ru/schedule/")
+        keyboard.add_openlink_button(
+            label="🌐 Cайт РАНХиГС", link="http://ranepa.ru")
 
-        keyboard.add_openlink_button(label="📰 Группа в ВК", link="https://vk.com/theacademy")
+        keyboard.add_openlink_button(
+            label="📰 Группа в ВК", link="https://vk.com/theacademy")
 
-    #### клавиатура - игры ####
-    def games(keyboard):
+    def contacts(keyboard):
         keyboard.add_button(label="Назад", color=green)
         keyboard.add_line()
 
-        keyboard.add_vkapps_button(label="2048", app_id=6866893, owner_id=177022076, hash="")
+        keyboard.add_button(label="🔍 Поиск преподавателя", color=blue)
         keyboard.add_line()
 
-        keyboard.add_vkapps_button(label="Джампер", app_id=7590798, owner_id=169484945, hash="")
-
-    #### клавиатура - настройки ####
-    def settings(keyboard, x):
-        keyboard.add_button(label="Назад", color=green)
-        keyboard.add_line()
-
-        keyboard.add_button(label="💡 Идея / 🤔 Сообщить об ошибке", color=blue)
-        keyboard.add_line()
-
-        keyboard.add_button(label="🤖 О Боте", color=blue)
-
-        keyboard.add_button(label="❓ F.A.Q.", color=blue)
-        keyboard.add_line()
-
-        if x == "классический":
-            keyboard.add_button(label="Стиль расписания: 📚 Классический", color=blue)
-        elif x == "упрощенный":
-            keyboard.add_button(label="Стиль расписания: ✂ Упрощенный", color=blue)
-        elif x == "без картинок":
-            keyboard.add_button(label="Стиль расписания: 🚫 Без картинок", color=blue)
-
-    def style_settings(keyboard, x):
-        keyboard.add_button(label="Назад", color=green)
-        keyboard.add_line()
-
-        if x == "классический":
-
-            keyboard.add_button(label="Стиль расписания: 📚 Классический", color=blue)
-            keyboard.add_line()
-
-            keyboard.add_button(label="Стиль расписания: ✂ Упрощенный", color=white)
-            keyboard.add_line()
-
-            keyboard.add_button(label="Стиль расписания: 🚫 Без картинок", color=white)
-
-        elif x == "упрощенный":
-            keyboard.add_button(label="Стиль расписания: 📚 Классический", color=white)
-            keyboard.add_line()
-
-            keyboard.add_button(label="Стиль расписания: ✂ Упрощенный", color=blue)
-            keyboard.add_line()
-
-            keyboard.add_button(label="Стиль расписания: 🚫 Без картинок", color=white)
-
-        elif x == "без картинок":
-            keyboard.add_button(label="Стиль расписания: 📚 Классический", color=white)
-            keyboard.add_line()
-
-            keyboard.add_button(label="Стиль расписания: ✂ Упрощенный", color=white)
-            keyboard.add_line()
-
-            keyboard.add_button(label="Стиль расписания: 🚫 Без картинок", color=blue)
+        keyboard.add_button(label="📋 Посмотреть весь список", color=blue)
 
     #### клавиатура - навигация ####
-
     def navigation(keyboard):
         keyboard.add_button(label="Назад", color=green)
         keyboard.add_line()
@@ -158,74 +116,172 @@ class _keyboard:
 
         keyboard.add_button(label="Корпус 6", color=blue)
 
+    #### клавиатура - игры ####
+    def games(keyboard):
+        keyboard.add_button(label="Назад", color=green)
+        keyboard.add_line()
+
+        keyboard.add_vkapps_button(label="2048", app_id=6866893, owner_id=177022076, hash="")
+        keyboard.add_line()
+
+        keyboard.add_vkapps_button(label="Джампер", app_id=7590798, owner_id=169484945, hash="")
+
     #### клавиатура - dev ####
     def developer(keyboard):
         keyboard.add_button(label="Главное меню", color=green)
         keyboard.add_line()
-
+        
         keyboard.add_button(label="Вкл err_mes_user", color=blue)
         keyboard.add_button(label="Выкл err_mes_user", color=blue)
+        keyboard.add_line()
+
+        keyboard.add_button(label="Вызвать начальное сообщение", color=blue)
+
+    #### Часы работы ####
+    def work_time(keyboard): 
+        keyboard.add_button(label="Назад", color=green)
+        keyboard.add_line()
+
+        keyboard.add_button(label="💼 Деканат", color=blue)
+        keyboard.add_line()
+
+        keyboard.add_button(label="🍕 Точки питания", color=blue)
+        keyboard.add_line()
+
+        keyboard.add_button(label="🚑 Медицинский центр РАНХиГС", color=blue)
+
+
+    #### клавиатура - настройки ####
+    def settings(keyboard):
+        keyboard.add_button(label="Назад", color=green)
+        keyboard.add_line()
+
+        keyboard.add_button(label="💡 Идея / 🤔 Сообщить об ошибке", color=blue)
+        keyboard.add_line()
+
+        keyboard.add_button(label="🤖 О Боте", color=blue)
+
+        keyboard.add_button(label="❓ F.A.Q.", color=blue)
+        keyboard.add_line()
+
+        keyboard.add_button(label="📋 Настройки профиля", color=blue)
+
+    #### генерируем клаву для настроек профиля ####
+    def gen_profile_set(keyboard, set):
+        for i in range(len(set)):
+            keyboard.add_button(label=f"{set[i-1]}", color=blue)
+
+            if (i != (len(set)-1)) and (len(set)-1 % 2 == 0):
+                keyboard.add_line()
+
+    def profile(keyboard, profile):
+        style = profile[5]
+
+        if style == "классический":
+            slyle_kb = "Стиль расписания: 📚 Классический"
+        elif style == "упрощенный":
+            slyle_kb = "Стиль расписания: ✂ Упрощенный"
+        elif style == "без картинок":
+            slyle_kb = "Стиль расписания: 🚫 Без картинок"
+
+        keyboard.add_button(label="Главное меню", color=green)
+        keyboard.add_button(label="Назад", color=green)
+        keyboard.add_line()
+
+        keyboard.add_button(label=f"Курс: {profile[2]}", color=blue)
+        keyboard.add_line()
+
+        keyboard.add_button(label=f"Форма обучения: {profile[3]}", color=blue)
+        keyboard.add_line()
+
+        keyboard.add_button(label=slyle_kb, color=blue)
+
+    def style_settings(keyboard, x):
+        keyboard.add_button(label="Главное меню", color=green)
+
+        keyboard.add_button(label="Назад", color=green)
+        keyboard.add_line()
+
+        if x == "классический":
+
+            keyboard.add_button(
+                label="Стиль расписания: 📚 Классический", color=blue)
+            keyboard.add_line()
+
+            keyboard.add_button(
+                label="Стиль расписания: ✂ Упрощенный", color=white)
+            keyboard.add_line()
+
+            keyboard.add_button(
+                label="Стиль расписания: 🚫 Без картинок", color=white)
+
+        elif x == "упрощенный":
+            keyboard.add_button(
+                label="Стиль расписания: 📚 Классический", color=white)
+            keyboard.add_line()
+
+            keyboard.add_button(
+                label="Стиль расписания: ✂ Упрощенный", color=blue)
+            keyboard.add_line()
+
+            keyboard.add_button(
+                label="Стиль расписания: 🚫 Без картинок", color=white)
+
+        elif x == "без картинок":
+            keyboard.add_button(
+                label="Стиль расписания: 📚 Классический", color=white)
+            keyboard.add_line()
+
+            keyboard.add_button(
+                label="Стиль расписания: ✂ Упрощенный", color=white)
+            keyboard.add_line()
+
+            keyboard.add_button(
+                label="Стиль расписания: 🚫 Без картинок", color=blue)
 
     #### клавиатура - выбор курса ####
+    def course(keyboard, profile):
+        if profile[2] != "не указан":
+            keyboard.add_button(label="Назад", color=green)
+            keyboard.add_line()
 
-    def schedule(keyboard):
+        keyboard.add_button(label="1 курс", color=blue)
+
+        keyboard.add_button(label="2 курс", color=blue)
+        keyboard.add_line()
+
+        keyboard.add_button(label="3 курс", color=blue)
+
+        keyboard.add_button(label="4 курс", color=blue)
+        keyboard.add_line()
+
+        keyboard.add_button(label="5 курс", color=blue)
+
+        # keyboard.add_button(label="&#4448;", color=blue)
+        keyboard.add_line()
+
+        keyboard.add_button(label="1 курс Магистратура", color=blue)
+
+        keyboard.add_button(label="2 курс Магистратура", color=blue)
+
+    def forma(keyboard, profile):
+        if profile[3] != "не указан":
+            keyboard.add_button(label="Назад", color=green)
+            keyboard.add_line()
+
+        keyboard.add_button(label="Очная форма", color=blue)
+        keyboard.add_line()
+
+        keyboard.add_button(label="Очно-заочная форма", color=blue)
+
+    def vipusk(keyboard):
         keyboard.add_button(label="Назад", color=green)
         keyboard.add_line()
 
-        keyboard.add_button(label="1 Курс", color=blue)
+        keyboard.add_button(label="Методички", color=blue)
         keyboard.add_line()
 
-        keyboard.add_button(label="2 Курс", color=blue)
+        keyboard.add_button(label="Электронная библиотека РАНХиГС", color=blue)
         keyboard.add_line()
 
-        keyboard.add_button(label="3 Курс", color=blue)
-        keyboard.add_line()
-
-        keyboard.add_button(label="4 Курс", color=blue)
-
-    #### клавиатура - 1 курс ####
-    def FC_schedule(keyboard):
-        keyboard.add_button(label="Главное меню", color=green)
-        keyboard.add_button(label="Назад", color=green)
-        keyboard.add_line()
-
-        keyboard.add_button(label="Экономика ОБ-7350-21", color=blue)
-        keyboard.add_line()
-
-        keyboard.add_button(label="Цифровые технологии ОБ-230766-21", color=blue)
-        keyboard.add_line()
-
-        keyboard.add_button(label="Информационная безопасность ОБ-7351-21", color=blue)
-
-    #### клавиатура - 2 курс ####
-    def SC_schedule(keyboard):
-        keyboard.add_button(label="Главное меню", color=green)
-        keyboard.add_button(label="Назад", color=green)
-        keyboard.add_line()
-
-        keyboard.add_button(label="Экономика ОБ-7350-20", color=blue)
-        keyboard.add_line()
-
-        keyboard.add_button(label="Информационная безопасность ОБ-7351-20", color=blue)
-
-    #### клавиатура - 3 курс ####
-    def TC_schedule(keyboard):
-        keyboard.add_button(label="Главное меню", color=green)
-        keyboard.add_button(label="Назад", color=green)
-        keyboard.add_line()
-
-        keyboard.add_button(label="Экономика ОБ-7350-19", color=blue)
-        keyboard.add_line()
-
-        keyboard.add_button(label="Информационная безопасность ОБ-7351-19", color=blue)
-
-    #### клавиатура - 4 курс ####
-    def FO_schedule(keyboard):
-        keyboard.add_button(label="Главное меню", color=green)
-        keyboard.add_button(label="Назад", color=green)
-        keyboard.add_line()
-
-        keyboard.add_button(label="Экономика ОБ-7350-18", color=blue)
-        keyboard.add_line()
-
-        keyboard.add_button(label="Информационная безопасность ОБ-7351-18", color=blue)
+        keyboard.add_button(label="График предзащит и защит", color=blue)
