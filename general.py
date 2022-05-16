@@ -205,8 +205,15 @@ class _navigation:
             'title': building + "_" + room[0]
         }
 
+    
+
     def send_etaj(self, adress, user_id):
-        self.send_photo_restart(f"navi/{_navigation.getLocation(adress).get('building')}/{_navigation.getLocation(adress).get('title')}.jpg", user_id)
+        corpus = "1", "2", "3", "5", "6"
+        if (_navigation.getLocation(adress).get('building') in corpus):
+            self.send_photo_restart(f"navi/{_navigation.getLocation(adress).get('building')}/{_navigation.getLocation(adress).get('title')}.jpg", user_id)
+        else:
+            return 0
+        
 
     def send_korpus(self, build, user_id):
 

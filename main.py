@@ -103,9 +103,15 @@ def main():
                 print(f"Появился новый пользователь! ID: {user_id}")
 
                 kb.start(keyboard)
-                send_message(user_id, data.start_message, keyboard)
+                send_message(user_id, data.start_message_1, keyboard)
                 
                 base.set_position(user_id, "регистрация")
+
+            elif base.column_info(7, user_id) == 0:
+                kb.main_menu(keyboard, base.user_info(user_id))
+                send_message(user_id, data.start_message_2, keyboard)
+
+                base.set_position(user_id, "главное меню")
 
             #### Регистрация ####
             elif (base.column_info(4, user_id) == "регистрация" and text == "приступить к работе"):
@@ -379,7 +385,6 @@ def main():
                 elif text == "вызвать начальное сообщение":
                     send_message(user_id, data.start_message)
 
-
             ## =========== ПАСХАЛКИ =========== ##
             # анекдот #
             elif (text == "анекдот"):
@@ -387,7 +392,6 @@ def main():
                     user_id, "Помню я один анекдот, сейчас расскажу...")
                 send_message(user_id, request.joke_def())
             ## =========== ПАСХАЛКИ =========== ##
-
 
             else:
                 schedule = base.send_schedule(text)
