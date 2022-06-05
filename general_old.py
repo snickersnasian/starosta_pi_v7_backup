@@ -1,7 +1,5 @@
-from distutils.log import info
 import os
 import os.path
-from pickle import FALSE
 import sqlite3
 import vk_api
 import time
@@ -26,37 +24,6 @@ class _request:
         joke_exit = joke
 
         return(joke_exit)
-
-    def parse_google_sheets(self, id, sheet_name, range_req):
-        res = req.get(
-            f'https://script.google.com/macros/s/AKfycbx1bumTMdwKXfgqx16AbMo44RaVMF694TGxQ9ZHj2vJMPkpHu4TnnzWlF5G2Zn_5GeT/exec?id={id}&sheetName={sheet_name}&rangeReq={range_req}')
-        json_res = res.json()
-        return(json_res)
-
-    def naychnik_info(self):
-        naychnik = self.parse_google_sheets('1GScYqi8PKwU8y2tNnP1QeVY0pMZsPxD18p_alkas93Q',
-                                'Научники/консультанты',
-                                            'C84:I93')
-        result = ""
-        naychryk = ""
-        consul = ""
-
-        for i in range(len(naychnik)):
-            if (naychnik[i][3] == 1):
-                naychryk = f"Осталось {15 - naychnik[i][1]} мест"
-            else:
-                naychryk = "нет"
-
-            if (naychnik[i][4] == 1):
-                consul = f"Осталось {15 - naychnik[i][2]} мест"
-            else:
-                consul = "нет"
-
-            result += (f"{naychnik[i][0]}\nНаучное руководство: {naychryk}\nКонсультирование: {consul}\nПочта: {naychnik[i][5]}\n\n")
-
-        return(result)
-
-
 
     ### погода ###
     def weather_def(self):
@@ -216,17 +183,9 @@ class _navigation:
 
         self.session.method('messages.send', post)
 
-    def send_photo_restart(self, photo, user_id):
-        try:
-            self.send_photo(photo, user_id)
-        except Exception:
-            print(f"Ошибка G-SP-03 | user_id: {user_id}")
-            time.sleep(1)
-            self.send_photo_restart(photo, user_id)
-
-
     def send_kampus(self, user_id):
-        self.send_photo_restart(f"navi/kampus.jpg", user_id)
+        self.send_photo(f"navi/kampus.jpg", user_id)
+
 
     def getLocation(adress):
         [room, building] = adress.split("/")
@@ -236,15 +195,9 @@ class _navigation:
             'title': building + "_" + room[0]
         }
 
-    
 
     def send_etaj(self, adress, user_id):
-        corpus = "1", "2", "3", "5", "6"
-        if (_navigation.getLocation(adress).get('building') in corpus):
-            self.send_photo_restart(f"navi/{_navigation.getLocation(adress).get('building')}/{_navigation.getLocation(adress).get('title')}.jpg", user_id)
-        else:
-            return 0
-        
+        self.send_photo(f"navi/{_navigation.getLocation(adress).get('building')}/{_navigation.getLocation(adress).get('title')}.jpg", user_id)
 
     def send_korpus(self, build, user_id):
 
@@ -262,7 +215,7 @@ class _navigation:
         x = 1
 
         while x <= k:
-            self.send_photo_restart(f"navi/{build}/{build}_{x}.jpg", user_id)
+            self.send_photo(f"navi/{build}/{build}_{x}.jpg", user_id)
             x = x + 1
 
 
@@ -272,204 +225,83 @@ class _botdb:
 
         self.cur = self.conn.cursor()
 
-        self.cur.execute("""CREATE TABLE IF NOT EXISTS Schedule(
-            S_ID INT,
-            COURSE INT,
-            F_EDU TEXT,
-            S_LINK TEXT,
-            S_NAME TEXT,
-            S_NUM TEXT
-        )""")
-
-        self.cur.execute("""CREATE TABLE IF NOT EXISTS Student(
-            S_ID INT, 
-            ROLE TEXT,
-            COURSE TEXT,
-            F_EDU TEXT,
-            UI_POS TEXT,
-            TYPE_SCH TEXT,
-            MAIL TEXT,
-            NUM_MES INT
-            )""")
-
-        self.cur.execute("""CREATE TABLE IF NOT EXISTS Teachers(
-            F_NAME TEXT,
-            S_NAME TEXT,
-            T_NAME TEXT,
-            EMAIL TEXT
-            )""")
+        self.cur.execute("""CREATE TABLE IF NOT EXISTS users(
+            user_id INT,
+            role TEXT,
+            ui_position TEXT,
+            type_of_schedule TEXT,
+            number_of_message INT
+            );
+            """)
 
         self.conn.commit()
-    
-    ## Студент ##
+
     def user_id_exists(self, user_id):
-        self.cur.execute(
-            f"""SELECT * FROM Student WHERE S_ID LIKE {user_id}""")
+        self.cur.execute(f"""SELECT * FROM users WHERE user_id LIKE {user_id}""")
 
         result = self.cur.fetchall()
 
         return(bool(result))
 
     def create_user(self, user_id):
-        self.cur.execute(
-            f"""INSERT INTO Student (S_ID, ROLE, COURSE, F_EDU, UI_POS, TYPE_SCH, MAIL, NUM_MES) VALUES ({user_id}, "студент", "не указан", "не указан", "регистрация", "классический", "Да", {0})""")
+        self.cur.execute(f"""INSERT INTO users (user_id, role, ui_position, type_of_schedule, number_of_message) VALUES ({user_id}, "user", "главное меню", "классический", {0})""")
 
         self.conn.commit()
 
     def set_position(self, user_id, position):
-        self.cur.execute(
-            f"""UPDATE Student SET UI_POS = "{position}" WHERE S_ID = {user_id}""")
-
-        self.conn.commit()
-
-    def set_type_of_schedule(self, user_id, type):
-        self.cur.execute(
-            f"""UPDATE Student SET TYPE_SCH = "{type}" WHERE S_ID = {user_id}""")
-
-        self.conn.commit()
-
-    def message_count(self, user_id):
-        self.cur.execute(
-            f"""SELECT NUM_MES FROM Student WHERE S_ID = {user_id} """)
-
-        new_count = self.cur.fetchall()[0][0] + 1
-
-        self.cur.execute(
-            f"""UPDATE Student SET NUM_MES = {new_count} WHERE S_ID = {user_id}""")
-
-        self.conn.commit()
-
-    def update_forma(self, user_id, forma):
-        self.cur.execute(
-            f"""UPDATE Student SET F_EDU = "{forma}" WHERE S_ID = {user_id}""")
-
-        self.conn.commit()
-
-    def update_course(self, user_id, course):
-        self.cur.execute(
-            f"""UPDATE Student SET COURSE = "{course}" WHERE S_ID = {user_id}""")
-
-        self.conn.commit()
-
-    def sql_delete(self, user_id):
-        self.cur.execute(
-            f"""DELETE FROM Student WHERE S_ID = {user_id}""")
+        self.cur.execute(f"""UPDATE users SET ui_position = "{position}" WHERE user_id = {user_id}""")
 
         self.conn.commit()
 
     def column_info(self, x,  user_id):
-        self.cur.execute(
-            f"""SELECT * FROM Student WHERE S_ID = {user_id}""")
-
+        self.cur.execute(f"""SELECT * FROM users WHERE user_id = {user_id}""")
         info = self.cur.fetchone()[x]
 
         return(info)
 
-    def user_info(self, user_id):
-        self.cur.execute(
-            f"""SELECT * FROM Student WHERE S_ID = {user_id}""")
+    def set_type_of_schedule(self, user_id, type):
+        self.cur.execute(f"""UPDATE users SET type_of_schedule = "{type}" WHERE user_id = {user_id}""")
 
-        info = self.cur.fetchone()
+        self.conn.commit()
 
-        return(info)
+    def message_count(self, user_id):
+        self.cur.execute(f"""SELECT number_of_message FROM users WHERE user_id = {user_id} """)
 
-    ## Учителя ##
+        new_count = self.cur.fetchall()[0][0] + 1
+
+        self.cur.execute(f"""UPDATE users SET number_of_message = {new_count} WHERE user_id = {user_id}""")
+
+        self.conn.commit()
+
     def teacher_exists(self, name):
-        self.cur.execute(
-            f"""SELECT * FROM Teachers WHERE S_NAME = "{name}" """)
+        self.cur.execute(f"""SELECT * FROM teacher WHERE sname = "{name}" """)
 
         result = self.cur.fetchall()
 
         return(bool(result))
 
     def teacher_info(self, x, name):
-        self.cur.execute(
-            f"""SELECT * FROM Teachers WHERE S_NAME = "{name}" """)
+        self.cur.execute(f"""SELECT * FROM teacher WHERE sname = "{name}" """)
         info = self.cur.fetchone()[x]
 
         return(info)
 
     def get_all_teachers(self):
         text = ""
-        self.cur.execute(
-            f"""SELECT * FROM Teachers ORDER BY S_NAME""")
-
+        self.cur.execute(f"""SELECT * FROM teacher ORDER BY sname""")
         rows = self.cur.fetchall()
         for row in rows:
             text += (f"""{str(row[1])} {str(row[0])} {str(row[2])}\n&#4448;&#4448;{str(row[3])}\n""")
 
         return(text)
-
+    
     def count_teachers(self):
-        self.cur.execute(
-            f"""SELECT * FROM Teachers""")
-
+        self.cur.execute(f"""SELECT * FROM teacher""")
         k = self.cur.fetchone()[0]
 
         return(k)
 
-    ## Расписание ##
-    def schedule_exists(self, user_id):
-        course = self.column_info(2, user_id)
-        form = self.column_info(3, user_id)
+    def sql_delete(self, user_id):
+        self.cur.execute(f"""DELETE FROM users WHERE user_id = {user_id}""")
 
-        self.cur.execute(
-            f"""SELECT * FROM Schedule WHERE COURSE = "{course}" AND  F_EDU = "{form}" """)
-
-        result = self.cur.fetchall()
-        
-        return(bool(result))
-
-    def send_group_schedule(self, user_id):
-        course = self.column_info(2, user_id)
-        form = self.column_info(3, user_id)
-
-        self.cur.execute(
-            f"""SELECT * FROM Schedule WHERE COURSE = "{course}" AND  F_EDU = "{form}" """)
-
-        result = self.cur.fetchall()
-
-        info = []
-
-        for row in result:
-            info.append(row[4] + " " + row[5])
-
-        return(info)
-
-    def send_schedule(self, message):
-        self.cur.execute(
-            f"""SELECT * FROM Schedule""")
-        
-        schedules = self.cur.fetchall()
-
-        schedules_num = []
-
-        for row in schedules:
-            schedules_num.append(row[5])
-
-        schedule_row = -1
-
-        for i, schedule_num in enumerate(schedules_num):
-            if schedule_num in message:
-                schedule_row = i
-
-        if schedule_row == -1:
-            return(False)
-
-        schedule = schedules[schedule_row][3]
-
-        return(schedule)
-
-    ## Регистрация ##
-    def reg(self, table, f_column, s_column, search):
-        self.cur.execute(
-            f"""SELECT {f_column} FROM {table} WHERE {s_column} = "{search}" """)
-
-        info = self.cur.fetchall()
-
-        result = []
-
-        for row in info:
-            result.append(row[0])
-
-        return(result)
+        self.conn.commit()

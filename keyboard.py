@@ -59,6 +59,9 @@ class _keyboard:
 
         keyboard.add_openlink_button(
             label="📌 Сайт ЭМИТа", link="https://emit.ranepa.ru/faculty-2/ai/")
+
+        keyboard.add_openlink_button(
+            label="🌐 Cайт РАНХиГС", link="http://ranepa.ru")
         keyboard.add_line()
 
         keyboard.add_openlink_button(
@@ -69,10 +72,10 @@ class _keyboard:
         keyboard.add_line()
 
         keyboard.add_openlink_button(
-            label="🌐 Cайт РАНХиГС", link="http://ranepa.ru")
+            label="📰 Группа в ВК", link="https://vk.com/theacademy")
 
         keyboard.add_openlink_button(
-            label="📰 Группа в ВК", link="https://vk.com/theacademy")
+            label="💭 Психологическая служба", link="https://ion.ranepa.ru/structure/department/psikhologicheskaya-sluzhba/#zapisatsya")
 
     def contacts(keyboard):
         keyboard.add_button(label="Назад", color=green)
@@ -278,10 +281,45 @@ class _keyboard:
         keyboard.add_button(label="Назад", color=green)
         keyboard.add_line()
 
-        keyboard.add_button(label="Методички", color=blue)
+        keyboard.add_button(label="👥 Научное руководство/Консультанты", color=blue)
         keyboard.add_line()
 
-        keyboard.add_button(label="Электронная библиотека РАНХиГС", color=blue)
+        keyboard.add_button(label="📈 График предзащит и защит", color=blue)
         keyboard.add_line()
 
-        keyboard.add_button(label="График предзащит и защит", color=blue)
+        keyboard.add_button(label="📚 Электронная библиотека РАНХиГС", color=blue)
+
+    def test(keyboard):
+        keyboard.add_button(label="Главное меню", color=green)
+
+        keyboard.add_button(label="Назад", color=green)
+        keyboard.add_line()
+
+        keyboard.add_button(label="test1", color=green)
+        keyboard.add_line()
+
+        keyboard.add_button(label="test1", color=green)
+
+    def naychnik(keyboard, google_sheets):
+        keyboard.add_button(label="Главное меню", color=green)
+
+        keyboard.add_button(label="Назад", color=green)
+        keyboard.add_line()
+
+        google_sheets_new = []
+
+        for i in range(len(google_sheets)):
+            if (google_sheets[i][1] > 0 and google_sheets[i][1] < 15):
+                google_sheets_new.append(google_sheets[i])
+
+        for i in range(len(google_sheets_new)):
+
+            if (i != (len(google_sheets_new)-1) and ((i-1) % 2) == 0):
+                keyboard.add_button(label=f"{google_sheets_new[i][0]}", color=blue)
+                keyboard.add_line()
+            else:
+                keyboard.add_button(label=f"{google_sheets_new[i][0]}", color=blue)
+
+
+
+

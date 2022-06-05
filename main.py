@@ -172,14 +172,24 @@ def main():
                 else:
                     send_message(user_id, "Я такого преподавателя пока не знаю.")
 
-            # elif (base.column_info(4, user_id) == "главное меню" and text == "👨‍🎓 для выпускников"):
-            #     kb.vipusk(keyboard)
-            #     send_message(user_id, "Тут ты можешь найти информацию для выпускников.", keyboard)
-
-            #     base.set_position(user_id, "меню выпускник")
-
             elif (base.column_info(4, user_id) == "главное меню" and text == "👨‍🎓 для выпускников"):
+                kb.vipusk(keyboard)
+                send_message(user_id, "Тут ты можешь найти информацию для выпускников.", keyboard)
+
+                base.set_position(user_id, "меню выпускник")
+
+            elif (base.column_info(4, user_id) == "меню выпускник" and text == "📈 график предзащит и защит"):
                 send_message(user_id, "Скоро тут будет много интересного!")
+
+            elif (base.column_info(4, user_id) == "меню выпускник" and text == "📚 электронная библиотека ранхигс"):
+                send_message(user_id, data.biblioteca_vipusk)
+
+            elif (base.column_info(4, user_id) == "меню выпускник" and text == "👥 научное руководство/консультанты"):
+                send_message(user_id, request.naychnik_info())
+
+
+            # elif (base.column_info(4, user_id) == "главное меню" and text == "👨‍🎓 для выпускников"):
+            #     send_message(user_id, "Скоро тут будет много интересного!")
 
             ## время работы ##
             elif (base.column_info(4, user_id) == "главное меню" and text == "🕖 часы работы"):
@@ -385,6 +395,25 @@ def main():
                 elif text == "вызвать начальное сообщение":
                     send_message(user_id, data.start_message)
 
+            elif text == "test":
+                kb.test(keyboard)
+                send_message(user_id, "test", keyboard)
+
+            elif text == "test1":
+                kb.naychnik(keyboard, request.parse_google_sheets('1GScYqi8PKwU8y2tNnP1QeVY0pMZsPxD18p_alkas93Q',
+                                                                  'Научники/консультанты',
+                                                                  'C84:E93'))
+                send_message(user_id, "test1", keyboard)
+
+            elif text == "test2":
+                print(request.parse_google_sheets('1GScYqi8PKwU8y2tNnP1QeVY0pMZsPxD18p_alkas93Q',
+                                                  'Научники/консультанты',
+                                                  'C84:G93'))
+                send_message(user_id, "test2")
+
+            elif text == "test3":
+                send_message(user_id, request.naychnik_info())
+
             ## =========== ПАСХАЛКИ =========== ##
             # анекдот #
             elif (text == "анекдот"):
@@ -398,7 +427,7 @@ def main():
 
                 if not schedule:
                     if (err_mes_user == 1):
-                        send_message(user_id, "Не совсем понимаю, что ты хочешь сказать\nВыбери пункт в меню.\n\n Если нничего не получается, то просто напиши команду 'начать', 'start' или 'главное меню' ")
+                        send_message(user_id, "Не совсем понимаю, что ты хочешь сказать\nВыбери пункт в меню.\n\nЕсли ничего не получается, то просто напиши команду 'начать', 'start' или 'главное меню' ")
                 else:
                     send_schedule(schedule, user_id, base.column_info(5, user_id))
                         
