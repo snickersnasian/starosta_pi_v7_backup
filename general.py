@@ -19,7 +19,7 @@ class _request:
 
     #### достаем шутки ####
     def joke_def(self):
-        joke_res = req.get('https://v2.jokeapi.dev/joke/Programming?type=single')
+        joke_res = req.get('https://v2.jokeapi.dev/joke/Programming?type=single', verify=False)
 
         joke = joke_res.json()['joke']
 
@@ -29,7 +29,7 @@ class _request:
 
     def parse_google_sheets(self, id, sheet_name, range_req):
         res = req.get(
-            f'https://script.google.com/macros/s/AKfycbx1bumTMdwKXfgqx16AbMo44RaVMF694TGxQ9ZHj2vJMPkpHu4TnnzWlF5G2Zn_5GeT/exec?id={id}&sheetName={sheet_name}&rangeReq={range_req}')
+            f'https://script.google.com/macros/s/AKfycbx1bumTMdwKXfgqx16AbMo44RaVMF694TGxQ9ZHj2vJMPkpHu4TnnzWlF5G2Zn_5GeT/exec?id={id}&sheetName={sheet_name}&rangeReq={range_req}', verify=False)
         json_res = res.json()
         return(json_res)
 
@@ -90,7 +90,7 @@ class _request:
     def array(self):
         arr = []
 
-        res = req.get('http://emit.ranepa.ru/faculty-2/ai/')
+        res = req.get('http://emit.ranepa.ru/faculty-2/ai/', verify=False)
 
         html = res.text
         soup = bs(html, 'html.parser')
@@ -170,7 +170,7 @@ class _request:
         ### создаем папку вновь ###
         os.mkdir("foto")
 
-        res = req.get(x)
+        res = req.get(x, verify=False)
 
         with open("schedule.pdf", 'wb') as f:
             f.write(res.content)
